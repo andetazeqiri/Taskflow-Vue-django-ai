@@ -1,27 +1,80 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { useAuthStore } from '@/stores/auth'
+import Toast from 'primevue/toast'
+import ConfirmDialog from 'primevue/confirmdialog'
+import Button from 'primevue/button'
+
+const authStore = useAuthStore()
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <div>
+    <header v-if="authStore.isAuthenticated">
+      <div class="wrapper">
+        <div class="flex justify-between items-center w-full px-6 py-4">
+          <h1 class="text-2xl font-bold">Taskflow</h1>
+          <nav class="flex gap-4 items-center">
+            <RouterLink to="/">Home</RouterLink>
+            <RouterLink to="/tasks">Tasks</RouterLink>
+            <RouterLink to="/about">About</RouterLink>
+            <Button
+              label="Logout"
+              icon="pi pi-sign-out"
+              @click="authStore.logout()"
+              class="p-button-text"
+              severity="secondary"
+            />
+          </nav>
+        </div>
+      </div>
+    </header>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
-    </div>
-  </header>
-
-  <RouterView />
+    <main>
+      <Toast />
+      <ConfirmDialog group="postion" />
+      <RouterView />
+    </main>
+  </div>
 </template>
 
 <style scoped>
 header {
+  border-bottom: 1px solid var(--color-border);
+  background: white;
+}
+
+.wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+nav {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+nav a {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+nav a:hover {
+  background-color: var(--color-background-soft);
+}
+
+nav a.router-link-exact-active {
+  color: var(--color-button-bg);
+  font-weight: 600;
+}
+
+main {
+  min-height: calc(100vh - 70px);
+}
+</style>
   line-height: 1.5;
   max-height: 100vh;
 }
