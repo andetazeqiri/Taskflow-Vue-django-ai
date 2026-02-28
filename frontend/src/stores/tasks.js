@@ -12,11 +12,11 @@ export const useTaskStore = defineStore('tasks', () => {
   const taskCount = computed(() => tasks.value.length)
 
   
-  const fetchTasks = async () => {
+  const fetchTasks = async (params = {}) => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/tasks/')
+      const response = await api.get('/tasks/', { params })
       tasks.value = response.data.results || response.data
     } catch (err) {
       error.value = err.response?.data?.detail || 'Failed to fetch tasks'

@@ -19,6 +19,74 @@
 
     <!-- Main Content Area -->
     <div class="tasks-content">
+      <!-- Filter Controls -->
+      <div class="filters-section">
+        <div class="filters-grid">
+          <div class="filter-item">
+            <label for="searchFilter" class="filter-label">
+              <i class="pi pi-search"></i> Search
+            </label>
+            <InputText
+              id="searchFilter"
+              v-model="filters.search"
+              placeholder="Search tasks..."
+              class="w-full"
+            />
+          </div>
+
+          <div class="filter-item">
+            <label for="statusFilter" class="filter-label">
+              <i class="pi pi-filter"></i> Status
+            </label>
+            <Dropdown
+              id="statusFilter"
+              v-model="filters.status"
+              :options="[
+                { label: 'All Statuses', value: '' },
+                ...statusOptions
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Filter by status"
+              class="w-full"
+            />
+          </div>
+
+          <div class="filter-item">
+            <label for="orderingFilter" class="filter-label">
+              <i class="pi pi-sort-alt"></i> Sort By
+            </label>
+            <Dropdown
+              id="orderingFilter"
+              v-model="filters.ordering"
+              :options="[
+                { label: 'Newest First', value: '-created_at' },
+                { label: 'Oldest First', value: 'created_at' },
+                { label: 'Title (A-Z)', value: 'title' },
+                { label: 'Title (Z-A)', value: '-title' },
+                { label: 'Due Date (Earliest)', value: 'due_date' },
+                { label: 'Due Date (Latest)', value: '-due_date' },
+                { label: 'Status', value: 'status' }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              class="w-full"
+            />
+          </div>
+
+          <div class="filter-item filter-actions">
+            <Button
+              label="Clear Filters"
+              icon="pi pi-filter-slash"
+              @click="clearFilters"
+              severity="secondary"
+              outlined
+              class="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
       <!-- Loading State -->
       <div v-if="taskStore.loading" class="flex justify-center py-8">
         <ProgressSpinner />
@@ -177,7 +245,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useTaskStore } from '@/stores/tasks'
@@ -196,6 +265,8 @@ import Calendar from 'primevue/calendar'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 
+const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const confirm = useConfirm()
 const taskStore = useTaskStore()
@@ -203,6 +274,13 @@ const taskStore = useTaskStore()
 const showCreateDialog = ref(false)
 const isEditMode = ref(false)
 const selectedTaskId = ref(null)
+
+// Filters state
+const filters = ref({
+  search: '',
+  status: '',
+  ordering: '-created_at'
+})
 
 const statusOptions = [
   { label: 'Pending', value: 'pending' },
@@ -360,8 +438,65 @@ const formatDate = (date) => {
   })
 }
 
+
+const initFiltersFromQuery = () => {
+  filters.value.search = route.query.search || ''
+  filters.value.status = route.query.status || ''
+  filters.value.ordering = route.query.ordering || '-created_at'
+}
+
+const fetchTasksWithFilters = async () => {
+  const params = {}
+  
+  if (filters.value.search) {
+    params.search = filters.value.search
+  }
+  if (filters.value.status) {
+    params.status = filters.value.status
+  }
+  if (filters.value.ordering) {
+    params.ordering = filters.value.ordering
+  }
+  
+  await taskStore.fetchTasks(params)
+}
+
+const updateURLFromFilters = () => {
+  const query = {}
+  
+  if (filters.value.search) {
+    query.search = filters.value.search
+  }
+  if (filters.value.status) {
+    query.status = filters.value.status
+  }
+  if (filters.value.ordering !== '-created_at') {
+    query.ordering = filters.value.ordering
+  }
+  
+  router.push({ query })
+}
+
+const clearFilters = () => {
+  filters.value.search = ''
+  filters.value.status = ''
+  filters.value.ordering = '-created_at'
+}
+
+watch(filters, () => {
+  updateURLFromFilters()
+  fetchTasksWithFilters()
+}, { deep: true })
+
+
+watch(() => route.query, () => {
+  initFiltersFromQuery()
+  fetchTasksWithFilters()
+})
+
 onMounted(() => {
-  taskStore.fetchTasks()
+  initFiltersFromQuery()
+  fetchTasksWithFilters()
 })
 </script>
 
@@ -409,6 +544,47 @@ onMounted(() => {
   margin: 0 auto;
   padding: 2rem;
 }
+
+/* Filters Section */
+.filters-section {
+  background: var(--surface-card);
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid var(--surface-border);
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  align-items: end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-label i {
+  color: var(--primary-color);
+}
+
+.filter-actions {
+  display: flex;
+  align-items: flex-end;
+}
+
 
 /* Empty State */
 .empty-state {
@@ -680,6 +856,15 @@ onMounted(() => {
 
   .tasks-content {
     padding: 1rem;
+  }
+
+  .filters-section {
+    padding: 1rem;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .form-row {
