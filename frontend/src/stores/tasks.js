@@ -76,6 +76,40 @@ export const useTaskStore = defineStore('tasks', () => {
     }
   }
 
+  const fetchTaskById = async (taskId) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.get(`/tasks/${taskId}/`)
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.detail || 'Failed to fetch task'
+      console.error('Fetch task error:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const updateTaskStatus = async (taskId, status) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.patch(`/tasks/${taskId}/`, { status })
+      const index = tasks.value.findIndex((t) => t.id === taskId)
+      if (index !== -1) {
+        tasks.value[index] = response.data
+      }
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.detail || 'Failed to update task status'
+      console.error('Update status error:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
    
     tasks,
@@ -87,6 +121,8 @@ export const useTaskStore = defineStore('tasks', () => {
     fetchTasks,
     createTask,
     updateTask,
-    deleteTask
+    deleteTask,
+    fetchTaskById,
+    updateTaskStatus
   }
 })

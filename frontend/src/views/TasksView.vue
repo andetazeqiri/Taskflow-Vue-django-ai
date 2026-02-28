@@ -118,7 +118,17 @@
         currentPageReportTemplate="Showing {first} to {last} of {totalRecords} tasks"
         class="p-datatable-striped"
       >
-        <Column field="title" header="Title" style="width: 30%"></Column>
+        <Column field="title" header="Title" style="width: 30%">
+          <template #body="{ data }">
+            <Button
+              :label="data.title"
+              @click="navigateToTask(data.id)"
+              text
+              class="text-left justify-content-start"
+              severity="info"
+            />
+          </template>
+        </Column>
         <Column field="description" header="Description" style="width: 30%"></Column>
         <Column field="status" header="Status" style="width: 15%">
           <template #body="{ data }">
@@ -427,6 +437,10 @@ const getStatusSeverity = (status) => {
     cancelled: 'danger'
   }
   return severities[status] || 'info'
+}
+
+const navigateToTask = (taskId) => {
+  router.push({ name: 'taskDetail', params: { id: taskId } })
 }
 
 const formatDate = (date) => {
