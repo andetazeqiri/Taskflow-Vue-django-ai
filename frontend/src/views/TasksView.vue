@@ -132,11 +132,23 @@
         <Column field="description" header="Description" style="width: 30%"></Column>
         <Column field="status" header="Status" style="width: 15%">
           <template #body="{ data }">
-            <Tag
-              :value="data.status"
-              :severity="getStatusSeverity(data.status)"
-              :rounded="true"
-            />
+            <Dropdown
+              :model-value="data.status"
+              :options="statusOptions"
+              optionLabel="label"
+              optionValue="value"
+              @change="(e) => handleInlineStatusUpdate(data.id, e.value)"
+              :loading="updatingTaskId === data.id"
+              class="w-full"
+            >
+              <template #value="{ value }">
+                <Tag
+                  :value="value"
+                  :severity="getStatusSeverity(value)"
+                  :rounded="true"
+                />
+              </template>
+            </Dropdown>
           </template>
         </Column>
         <Column field="due_date" header="Due Date" style="width: 15%">
@@ -284,6 +296,7 @@ const taskStore = useTaskStore()
 const showCreateDialog = ref(false)
 const isEditMode = ref(false)
 const selectedTaskId = ref(null)
+const updatingTaskId = ref(null)
 
 // Filters state
 const filters = ref({
@@ -427,6 +440,29 @@ const confirmDelete = (task) => {
       }
     }
   })
+}
+
+const handleInlineStatusUpdate = async (taskId, newStatus) => {
+  updatingTaskId.value = taskId
+  
+  try {
+    await taskStore.updateTaskStatus(taskId, newStatus)
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Task status updated',
+      life: 2000
+    })
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: taskStore.error || 'Failed to update task status',
+      life: 3000
+    })
+  } finally {
+    updatingTaskId.value = null
+  }
 }
 
 const getStatusSeverity = (status) => {
@@ -658,6 +694,30 @@ onMounted(() => {
 
 :deep(.p-paginator-current) {
   color: var(--text-color-secondary);
+}
+
+/* Inline Status Dropdown */
+:deep(.p-datatable .p-datatable-tbody > tr > td .p-dropdown) {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td .p-dropdown:hover) {
+  border-color: var(--primary-color);
+  background: var(--surface-ground);
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td .p-dropdown-trigger) {
+  color: var(--text-color-secondary);
+  padding: 0.5rem;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td .p-dropdown.p-focus) {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.2);
 }
 
 /* Dialog Customization */
