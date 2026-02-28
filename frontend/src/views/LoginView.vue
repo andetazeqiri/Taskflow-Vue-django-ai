@@ -6,40 +6,49 @@
         <p class="text-gray-600">Task Management System</p>
       </div>
 
-      <!-- Error Alert -->
-      <Message v-if="authStore.error" severity="error" :text="authStore.error" closable class="mb-4" />
+      <!-- Error Message -->
+      <Message v-if="authStore.error" severity="error" :closable="false" class="mb-4">
+        {{ authStore.error }}
+      </Message>
 
       <!-- Login Form -->
-      <form @submit.prevent="handleLogin" class="space-y-4">
-        <div>
-          <label for="username" class="block text-sm font-medium mb-2">Username</label>
+      <form @submit.prevent="handleLogin" class="space-y-6">
+        <FloatLabel>
           <InputText
             id="username"
             v-model="formData.username"
-            placeholder="Enter your username"
             class="w-full"
             :disabled="authStore.loading"
+            autocomplete="username"
           />
-        </div>
+          <label for="username">Username</label>
+        </FloatLabel>
 
-        <div>
-          <label for="password" class="block text-sm font-medium mb-2">Password</label>
+        <FloatLabel>
           <Password
             id="password"
             v-model="formData.password"
-            placeholder="Enter your password"
             class="w-full"
             :feedback="false"
             :disabled="authStore.loading"
+            toggleMask
+            autocomplete="current-password"
           />
-        </div>
+          <label for="password">Password</label>
+        </FloatLabel>
 
         <Button
           type="submit"
           label="Login"
+          icon="pi pi-sign-in"
           class="w-full"
           :loading="authStore.loading"
-        />
+          :disabled="authStore.loading"
+        >
+          <template #loadingicon>
+            <i class="pi pi-spin pi-spinner" />
+          </template>
+        </Button>
       </form>
 
       <!-- Register Link -->
@@ -50,6 +59,7 @@
             type="button"
             @click="showRegister = true"
             class="text-blue-600 hover:underline font-medium"
+            :disabled="authStore.loading"
           >
             Register
           </button>
@@ -60,53 +70,74 @@
     <!-- Register Dialog -->
     <Dialog
       v-model:visible="showRegister"
-      header="Register"
+      header="Create Account"
       :modal="true"
-      :style="{ width: '400px' }"
+      :style="{ width: '450px' }"
+      :closable="!authStore.loading"
+      :dismissableMask="!authStore.loading"
     >
-      <form @submit.prevent="handleRegister" class="space-y-4">
-        <div>
-          <label for="reg-username" class="block text-sm font-medium mb-2">Username</label>
+      <Message v-if="authStore.error" severity="error" :closable="false" class="mb-4">
+        {{ authStore.error }}
+      </Message>
+
+      <form @submit.prevent="handleRegister" class="space-y-6">
+        <FloatLabel>
           <InputText
             id="reg-username"
             v-model="registerData.username"
-            placeholder="Choose a username"
             class="w-full"
+            :disabled="authStore.loading"
+            autocomplete="username"
           />
-        </div>
+          <label for="reg-username">Username</label>
+        </FloatLabel>
 
-        <div>
-          <label for="reg-email" class="block text-sm font-medium mb-2">Email</label>
+        <FloatLabel>
           <InputText
             id="reg-email"
             v-model="registerData.email"
             type="email"
-            placeholder="Enter your email"
             class="w-full"
+            :disabled="authStore.loading"
+            autocomplete="email"
           />
-        </div>
+          <label for="reg-email">Email</label>
+        </FloatLabel>
 
-        <div>
-          <label for="reg-password" class="block text-sm font-medium mb-2">Password</label>
+        <FloatLabel>
           <Password
             id="reg-password"
             v-model="registerData.password"
-            placeholder="Create a password"
             class="w-full"
-            :feedback="false"
+            toggleMask
+            :disabled="authStore.loading"
+            autocomplete="new-password"
           />
-        </div>
+          <label for="reg-password">Password</label>
+        </FloatLabel>
 
         <Button
           type="submit"
           label="Register"
+          icon="pi pi-user-plus"
           class="w-full"
           :loading="authStore.loading"
-        />
+          :disabled="authStore.loading"
+        >
+          <template #loadingicon>
+            <i class="pi pi-spin pi-spinner" />
+          </template>
+        </Button>
       </form>
 
       <template #footer>
-        <Button label="Cancel" @click="showRegister = false" class="p-button-text" />
+        <Button 
+          label="Cancel" 
+          icon="pi pi-times"
+          @click="showRegister = false" 
+          text 
+          :disabled="authStore.loading"
+        />
       </template>
     </Dialog>
   </div>
@@ -118,6 +149,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'primevue/usetoast'
 
+import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
@@ -214,15 +246,172 @@ const handleRegister = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-600) 100%);
+  padding: 1rem;
 }
 
 .login-card {
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
+  background: var(--surface-card);
+  border-radius: var(--border-radius-lg);
+  padding: 2.5rem;
   width: 100%;
-  max-width: 400px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--surface-border);
+}
+
+.login-card h1 {
+  color: var(--text-color);
+  margin: 0;
+}
+
+.login-card p {
+  color: var(--text-color-secondary);
+  margin: 0.5rem 0 0 0;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mt-6 {
+  margin-top: 1.5rem;
+}
+
+.text-4xl {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.text-blue-600 {
+  color: var(--primary-color);
+}
+
+.text-blue-600:hover {
+  color: var(--primary-700);
+}
+
+.hover\:underline:hover {
+  text-decoration: underline;
+}
+
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+/* Float Label styling */
+:deep(.p-floatlabel > label) {
+  color: var(--text-color-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+:deep(.p-floatlabel > .p-inputtext:focus ~ label,
+.p-floatlabel > .p-password:focus ~ label,
+.p-floatlabel > .p-inputtext.ng-filled ~ label,
+.p-floatlabel > .p-password.ng-filled ~ label) {
+  color: var(--primary-color);
+}
+
+/* Input styling */
+:deep(.p-inputtext,
+.p-password > input) {
+  background: var(--surface-ground);
+  border-color: var(--surface-border);
+  color: var(--text-color);
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+}
+
+:deep(.p-inputtext:focus,
+.p-password > input:focus) {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.2);
+}
+
+/* Button styling */
+:deep(.p-button) {
+  padding: 0.875rem 1rem;
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--border-radius);
+}
+
+/* Message styling */
+:deep(.p-message) {
+  background: var(--surface-50);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+}
+
+:deep(.p-message.p-message-error) {
+  background: rgba(var(--red-500-rgb), 0.1);
+  border-color: var(--red-500);
+}
+
+:deep(.p-message.p-message-error .p-message-text) {
+  color: var(--red-700);
+}
+
+/* Dialog styling */
+:deep(.p-dialog .p-dialog-header) {
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--surface-border);
+  padding: 1.5rem;
+}
+
+:deep(.p-dialog .p-dialog-content) {
+  background: var(--surface-card);
+  padding: 1.5rem;
+}
+
+:deep(.p-dialog .p-dialog-footer) {
+  background: var(--surface-card);
+  border-top: 1px solid var(--surface-border);
+  padding: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .login-card {
+    padding: 2rem;
+    max-width: 100%;
+  }
+
+  .text-4xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
 }
 </style>
+

@@ -1,79 +1,92 @@
 <template>
-  <div class="tasks-container p-6">
-    <div class="mb-4">
-      <h1 class="text-3xl font-bold mb-4">Tasks</h1>
-      <Button
-        label="New Task"
-        icon="pi pi-plus"
-        @click="showCreateDialog = true"
-        class="p-button-success"
-      />
+  <div class="tasks-container">
+    <!-- Hero/Navigation Section -->
+    <div class="tasks-hero">
+      <div class="hero-content">
+        <div>
+          <h1 class="hero-title">Tasks</h1>
+          <p class="hero-subtitle">Manage and organize your tasks efficiently</p>
+        </div>
+        <Button
+          label="Create Task"
+          icon="pi pi-plus"
+          @click="showCreateDialog = true"
+          severity="success"
+          size="large"
+        />
+      </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="taskStore.loading" class="flex justify-center py-8">
-      <ProgressSpinner />
-    </div>
+    <!-- Main Content Area -->
+    <div class="tasks-content">
+      <!-- Loading State -->
+      <div v-if="taskStore.loading" class="flex justify-center py-8">
+        <ProgressSpinner />
+      </div>
 
-    <!-- Error State -->
-    <div v-else-if="taskStore.error" class="mb-4">
-      <Message severity="error" :text="taskStore.error" closable />
-    </div>
+      <!-- Error State -->
+      <div v-else-if="taskStore.error" class="mb-4">
+        <Message severity="error" :closable="true">
+          {{ taskStore.error }}
+        </Message>
+      </div>
 
-    <!-- Empty State -->
-    <div v-else-if="taskStore.tasks.length === 0" class="text-center py-8">
-      <p class="text-gray-500 text-lg">No tasks yet. Create one to get started!</p>
-    </div>
+      <!-- Empty State -->
+      <div v-else-if="taskStore.tasks.length === 0" class="empty-state">
+        <i class="pi pi-inbox text-6xl mb-4" />
+        <p class="empty-state-text">No tasks yet. Create one to get started!</p>
+      </div>
 
-    <!-- DataTable -->
-    <DataTable
-      v-else
-      :value="taskStore.tasks"
-      responsiveLayout="scroll"
-      striped-rows
-      :paginator="true"
-      :rows="10"
-      paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-      :rowsPerPageOptions="[5, 10, 20]"
-      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} tasks"
-      class="p-datatable-striped"
-    >
-      <Column field="title" header="Title" style="width: 30%"></Column>
-      <Column field="description" header="Description" style="width: 30%"></Column>
-      <Column field="status" header="Status" style="width: 15%">
-        <template #body="{ data }">
-          <Tag
-            :value="data.status"
-            :severity="getStatusSeverity(data.status)"
-            :rounded="true"
-          />
-        </template>
-      </Column>
-      <Column field="due_date" header="Due Date" style="width: 15%">
-        <template #body="{ data }">
-          {{ formatDate(data.due_date) }}
-        </template>
-      </Column>
-      <Column style="width: 10%; text-align: center">
-        <template #body="{ data }">
-          <Button
-            icon="pi pi-pencil"
-            rounded
-            severity="info"
-            text
-            @click="openEditDialog(data)"
-            class="mr-2"
-          />
-          <Button
-            icon="pi pi-trash"
-            rounded
-            severity="danger"
-            text
-            @click="confirmDelete(data)"
-          />
-        </template>
-      </Column>
-    </DataTable>
+      <!-- DataTable -->
+      <DataTable
+        v-else
+        :value="taskStore.tasks"
+        responsiveLayout="scroll"
+        striped-rows
+        :paginator="true"
+        :rows="10"
+        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+        :rowsPerPageOptions="[5, 10, 20]"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} tasks"
+        class="p-datatable-striped"
+      >
+        <Column field="title" header="Title" style="width: 30%"></Column>
+        <Column field="description" header="Description" style="width: 30%"></Column>
+        <Column field="status" header="Status" style="width: 15%">
+          <template #body="{ data }">
+            <Tag
+              :value="data.status"
+              :severity="getStatusSeverity(data.status)"
+              :rounded="true"
+            />
+          </template>
+        </Column>
+        <Column field="due_date" header="Due Date" style="width: 15%">
+          <template #body="{ data }">
+            {{ formatDate(data.due_date) }}
+          </template>
+        </Column>
+        <Column style="width: 10%; text-align: center">
+          <template #body="{ data }">
+            <Button
+              icon="pi pi-pencil"
+              rounded
+              severity="info"
+              text
+              @click="openEditDialog(data)"
+              class="mr-2"
+            />
+            <Button
+              icon="pi pi-trash"
+              rounded
+              severity="danger"
+              text
+              @click="confirmDelete(data)"
+            />
+          </template>
+        </Column>
+      </DataTable>
+    </div>
 
     <!-- Create/Edit Dialog -->
     <Dialog
@@ -83,9 +96,9 @@
       :style="{ width: '50vw' }"
       @hide="resetForm"
     >
-      <div class="flex flex-col gap-4">
-        <div>
-          <label for="title" class="block mb-2">Title *</label>
+      <div class="dialog-form">
+        <div class="form-group">
+          <label for="title" class="form-label">Title *</label>
           <InputText
             id="title"
             v-model="formData.title"
@@ -94,8 +107,8 @@
           />
         </div>
 
-        <div>
-          <label for="description" class="block mb-2">Description</label>
+        <div class="form-group">
+          <label for="description" class="form-label">Description</label>
           <Textarea
             id="description"
             v-model="formData.description"
@@ -105,9 +118,9 @@
           />
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label for="status" class="block mb-2">Status *</label>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="status" class="form-label">Status *</label>
             <Dropdown
               id="status"
               v-model="formData.status"
@@ -119,11 +132,12 @@
             />
           </div>
 
-          <div>
-            <label for="dueDate" class="block mb-2">Due Date</label>
+          <div class="form-group">
+            <label for="dueDate" class="form-label">Due Date</label>
             <Calendar
               id="dueDate"
               v-model="formData.due_date"
+              :min-date="getTodayDate()"
               show-time
               date-format="yy-mm-dd"
               placeholder="Select due date"
@@ -133,11 +147,19 @@
       </div>
 
       <template #footer>
-        <Button label="Cancel" @click="showCreateDialog = false" class="p-button-text" />
+        <Button 
+          label="Cancel" 
+          icon="pi pi-times"
+          @click="showCreateDialog = false" 
+          severity="secondary"
+          text
+        />
         <Button
           :label="isEditMode ? 'Update' : 'Create'"
+          icon="pi pi-check"
           @click="saveTask"
           :loading="taskStore.loading"
+          severity="success"
         />
       </template>
     </Dialog>
@@ -189,6 +211,13 @@ const statusOptions = [
   { label: 'Cancelled', value: 'cancelled' }
 ]
 
+// Get today's date at midnight for min-date validation
+const getTodayDate = () => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return today
+}
+
 const formData = ref({
   title: '',
   description: '',
@@ -228,6 +257,23 @@ const saveTask = async () => {
       life: 3000
     })
     return
+  }
+
+  // Validate due date is not in the past
+  if (formData.value.due_date) {
+    const selectedDate = new Date(formData.value.due_date)
+    selectedDate.setHours(0, 0, 0, 0)
+    const today = getTodayDate()
+    
+    if (selectedDate < today) {
+      toast.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: 'Due date cannot be in the past',
+        life: 3000
+      })
+      return
+    }
   }
 
   try {
@@ -321,7 +367,337 @@ onMounted(() => {
 
 <style scoped>
 .tasks-container {
+  min-height: 100vh;
+  background: var(--surface-ground);
+}
+
+/* Hero Section */
+.tasks-hero {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-600) 100%);
+  padding: 3rem 2rem;
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-content {
   max-width: 1400px;
   margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+  line-height: 1.2;
+}
+
+.hero-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0.5rem 0 0 0;
+}
+
+/* Content Area */
+.tasks-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-color-secondary);
+}
+
+.empty-state i {
+  color: var(--primary-color);
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: 1.125rem;
+  margin: 1rem 0 0 0;
+}
+
+/* DataTable Customization */
+:deep(.p-datatable) {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th) {
+  background: var(--surface-section);
+  color: var(--text-color);
+  border-color: var(--surface-border);
+  font-weight: 600;
+  padding: 1rem;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr) {
+  border-color: var(--surface-border);
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr:hover) {
+  background: var(--surface-50);
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td) {
+  padding: 1rem;
+  color: var(--text-color);
+}
+
+:deep(.p-paginator) {
+  background: var(--surface-section);
+  border-top: 1px solid var(--surface-border);
+  padding: 1rem;
+}
+
+:deep(.p-paginator-current) {
+  color: var(--text-color-secondary);
+}
+
+/* Dialog Customization */
+:deep(.p-dialog) {
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+:deep(.p-dialog .p-dialog-header) {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-600) 100%);
+  border: none;
+  padding: 1.5rem;
+}
+
+:deep(.p-dialog .p-dialog-header .p-dialog-title) {
+  color: white;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+:deep(.p-dialog .p-dialog-header .p-dialog-header-close) {
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.2s;
+}
+
+:deep(.p-dialog .p-dialog-header .p-dialog-header-close:hover) {
+  color: white;
+}
+
+:deep(.p-dialog .p-dialog-content) {
+  background: var(--surface-card);
+  padding: 2rem;
+  color: var(--text-color);
+}
+
+:deep(.p-dialog .p-dialog-footer) {
+  background: var(--surface-section);
+  border-top: 1px solid var(--surface-border);
+  padding: 1.5rem;
+  gap: 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Input Labels and Organization */
+:deep(.p-dialog label) {
+  color: var(--text-color);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  display: block;
+  font-size: 0.95rem;
+}
+
+:deep(.p-dialog .p-field-label) {
+  color: var(--text-color);
+}
+
+:deep(.p-inputtext,
+.p-inputtextarea) {
+  background: var(--surface-ground);
+  border: 1px solid var(--surface-border);
+  color: var(--text-color);
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+}
+
+:deep(.p-inputtext:focus,
+.p-inputtextarea:focus) {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.2);
+}
+
+:deep(.p-dropdown,
+.p-calendar) {
+  background: var(--surface-ground);
+  border: 1px solid var(--surface-border);
+  color: var(--text-color);
+  border-radius: var(--border-radius);
+}
+
+:deep(.p-dropdown:focus,
+.p-calendar:focus) {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.2);
+}
+
+/* Tag Styling */
+:deep(.p-tag) {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Message Styling */
+:deep(.p-message) {
+  background: var(--surface-50);
+  border-left: 4px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+}
+
+:deep(.p-message-error) {
+  background: rgba(var(--red-500-rgb), 0.1);
+  border-left-color: var(--red-500);
+}
+
+:deep(.p-message .p-message-text) {
+  color: var(--text-color);
+}
+
+/* Button Styles in Dialog */
+:deep(.p-dialog .p-button) {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+}
+
+/* Form Organization */
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  color: var(--text-color);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+:deep(.p-inputtext,
+.p-inputtextarea,
+.p-dropdown,
+.p-calendar) {
+  padding: 0.75rem;
+  width: 100%;
+  font-size: 0.95rem;
+}
+
+:deep(.p-dropdown-trigger,
+.p-calendar-trigger) {
+  color: var(--text-color-secondary);
+}
+
+/* Flex Utilities */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.py-8 {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .hero-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .tasks-hero {
+    padding: 2rem 1rem;
+  }
+
+  .tasks-content {
+    padding: 1rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  :deep(.p-dialog) {
+    width: 90vw !important;
+  }
+
+  :deep(.p-datatable) {
+    font-size: 0.875rem;
+  }
+
+  :deep(.p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td) {
+    padding: 0.75rem 0.5rem;
+  }
 }
 </style>
