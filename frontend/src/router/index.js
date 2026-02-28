@@ -9,7 +9,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, isPublic: true }
     },
     {
       path: '/',
@@ -29,22 +29,49 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
       meta: { requiresAuth: true }
     },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: () => {
+        const authStore = useAuthStore()
+        return authStore.isAuthenticated ? '/tasks' : '/login'
+      }
+    }
   ],
 })
 
-// Navigation guard
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   const requiresAuth = to.meta.requiresAuth !== false
+  const isPublic = to.meta.isPublic === true
 
-  if (requiresAuth && !authStore.isAuthenticated) {
-    // Redirect to login if not authenticated
-    next('/login')
-  } else if (to.path === '/login' && authStore.isAuthenticated) {
-    // Redirect to tasks if already logged in
-    next('/tasks')
-  } else {
-    next()
+  
+  const isAuthenticated = authStore.isAuthenticated
+
+  
+  if (requiresAuth && !isAuthenticated) {
+    console.warn(`[Router Guard] Unauthenticated user attempting to access protected route: ${to.path}`)
+    return next({
+      path: '/login',
+      query: { redirect: to.fullPath }
+    })
+  }
+
+ 
+  if (isPublic && isAuthenticated && to.path === '/login') {
+    console.log('[Router Guard] Authenticated user redirected from login to tasks')
+    return next('/tasks')
+  }
+
+  
+  next()
+})
+
+
+router.afterEach((to, from) => {
+  
+  const authStore = useAuthStore()
+  if (to.path !== from.path) {
+    // authStore.clearError()
   }
 })
 
