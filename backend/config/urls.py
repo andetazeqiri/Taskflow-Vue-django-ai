@@ -19,7 +19,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from tasks.views import TaskViewSet
+from tasks.views import TaskViewSet, generate_task_suggestions, enhance_task_description, analyze_task_priority
 from users.views import register_view, user_profile_view
 
 router = DefaultRouter()
@@ -32,4 +32,8 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/profile/', user_profile_view, name='user_profile'),
+    # AI-powered endpoints
+    path('api/ai/generate-suggestions/', generate_task_suggestions, name='generate_suggestions'),
+    path('api/ai/enhance-description/', enhance_task_description, name='enhance_description'),
+    path('api/ai/analyze-priority/', analyze_task_priority, name='analyze_priority'),
 ]

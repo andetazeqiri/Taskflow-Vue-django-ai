@@ -7,13 +7,23 @@
           <h1 class="hero-title">Tasks</h1>
           <p class="hero-subtitle">Manage and organize your tasks efficiently</p>
         </div>
-        <Button
-          label="Create Task"
-          icon="pi pi-plus"
-          @click="showCreateDialog = true"
-          severity="success"
-          size="large"
-        />
+        <div class="hero-buttons">
+          <Button
+            label="Generate Suggestions"
+            icon="pi pi-lightbulb"
+            @click="showSuggestionsDialog = true"
+            severity="warning"
+            outlined
+            size="large"
+          />
+          <Button
+            label="Create Task"
+            icon="pi pi-plus"
+            @click="showCreateDialog = true"
+            severity="success"
+            size="large"
+          />
+        </div>
       </div>
     </div>
 
@@ -159,11 +169,21 @@
         <Column style="width: 10%; text-align: center">
           <template #body="{ data }">
             <Button
+              icon="pi pi-sparkles"
+              rounded
+              severity="success"
+              text
+              @click="openAIDialog(data)"
+              v-tooltip.top="'AI Assist'"
+              class="mr-2"
+            />
+            <Button
               icon="pi pi-pencil"
               rounded
               severity="info"
               text
               @click="openEditDialog(data)"
+              v-tooltip.top="'Edit'"
               class="mr-2"
             />
             <Button
@@ -254,6 +274,20 @@
       </template>
     </Dialog>
 
+    <!-- AI Breakdown Dialog -->
+    <AIBreakdownDialog
+      v-model:visible="showAIDialog"
+      :task-id="selectedTaskForAI?.id"
+      :task-title="selectedTaskForAI?.title"
+      @success="handleAIBreakdownSuccess"
+    />
+
+    <!-- AI Generate Suggestions Dialog -->
+    <AIGenerateSuggestionsDialog
+      v-model:visible="showSuggestionsDialog"
+      @task-created="handleTaskCreatedFromSuggestion"
+    />
+
     <!-- Confirm Delete Dialog -->
     <ConfirmDialog
       group="postion"
@@ -286,6 +320,11 @@ import Dropdown from 'primevue/dropdown'
 import Calendar from 'primevue/calendar'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
+import Tooltip from 'primevue/tooltip'
+import AIBreakdownDialog from '@/components/AIBreakdownDialog.vue'
+import AIGenerateSuggestionsDialog from '@/components/AIGenerateSuggestionsDialog.vue'
+
+const vTooltip = Tooltip
 
 const router = useRouter()
 const route = useRoute()
@@ -295,6 +334,9 @@ const taskStore = useTaskStore()
 
 const showCreateDialog = ref(false)
 const isEditMode = ref(false)
+const showAIDialog = ref(false)
+const showSuggestionsDialog = ref(false)
+const selectedTaskForAI = ref(null)
 const selectedTaskId = ref(null)
 const updatingTaskId = ref(null)
 
@@ -347,6 +389,20 @@ const openEditDialog = (task) => {
     due_date: task.due_date ? new Date(task.due_date) : null
   }
   showCreateDialog.value = true
+}
+
+const openAIDialog = (task) => {
+  selectedTaskForAI.value = task
+  showAIDialog.value = true
+}
+
+const handleAIBreakdownSuccess = (breakdown) => {
+  toast.add({
+    severity: 'success',
+    summary: 'AI Breakdown Generated',
+    detail: `Generated ${breakdown.subtasks.length} actionable subtasks for "${selectedTaskForAI.value?.title}"`,
+    life: 4000
+  })
 }
 
 const saveTask = async () => {
@@ -463,6 +519,17 @@ const handleInlineStatusUpdate = async (taskId, newStatus) => {
   } finally {
     updatingTaskId.value = null
   }
+}
+
+const handleTaskCreatedFromSuggestion = (task) => {
+  // Task is already added to the store from the suggestion dialog
+  showSuggestionsDialog.value = false
+  toast.add({
+    severity: 'success',
+    summary: 'Task Created',
+    detail: `Task created: ${task.title}`,
+    life: 3000
+  })
 }
 
 const getStatusSeverity = (status) => {
@@ -586,6 +653,12 @@ onMounted(() => {
   font-size: 1rem;
   color: rgba(255, 255, 255, 0.9);
   margin: 0.5rem 0 0 0;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 /* Content Area */

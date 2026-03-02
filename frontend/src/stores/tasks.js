@@ -110,6 +110,66 @@ export const useTaskStore = defineStore('tasks', () => {
     }
   }
 
+  const breakdownTask = async (taskId, numSteps = 5) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.post(`/tasks/${taskId}/ai-breakdown/`, { num_steps: numSteps })
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Failed to generate task breakdown'
+      console.error('Breakdown task error:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const generateTaskSuggestions = async (context, numSuggestions = 3) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.post('/ai/generate-suggestions/', { context, num_suggestions: numSuggestions })
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Failed to generate suggestions'
+      console.error('Generate suggestions error:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const enhanceTaskDescription = async (title, description = '') => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.post('/ai/enhance-description/', { title, description })
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Failed to enhance description'
+      console.error('Enhance description error:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const analyzeTaskPriority = async (title, description = '', dueDate = null) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.post('/ai/analyze-priority/', { title, description, due_date: dueDate })
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Failed to analyze priority'
+      console.error('Analyze priority error:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
    
     tasks,
@@ -123,6 +183,10 @@ export const useTaskStore = defineStore('tasks', () => {
     updateTask,
     deleteTask,
     fetchTaskById,
-    updateTaskStatus
+    updateTaskStatus,
+    breakdownTask,
+    generateTaskSuggestions,
+    enhanceTaskDescription,
+    analyzeTaskPriority
   }
 })

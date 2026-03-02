@@ -109,6 +109,27 @@
         <!-- Actions -->
         <div class="actions-section">
           <Button
+            label="Enhance Description"
+            icon="pi pi-pencil-square"
+            @click="showEnhanceDialog = true"
+            severity="info"
+            outlined
+          />
+          <Button
+            label="Analyze Priority"
+            icon="pi pi-chart-bar"
+            @click="showPriorityDialog = true"
+            severity="warning"
+            outlined
+          />
+          <Button
+            label="Break Down Task"
+            icon="pi pi-list"
+            @click="showAIDialog = true"
+            severity="success"
+            outlined
+          />
+          <Button
             label="Edit Task"
             icon="pi pi-pencil"
             @click="editTask"
@@ -130,6 +151,106 @@
       </div>
     </div>
 
+    <!-- Edit Dialog -->
+    <Dialog
+      v-model:visible="showEditDialog"
+      header="Edit Task"
+      :modal="true"
+      :style="{ width: '50vw' }"
+      @hide="resetForm"
+    >
+      <div class="dialog-form">
+        <div class="form-group">
+          <label for="title" class="form-label">Title *</label>
+          <InputText
+            id="title"
+            v-model="formData.title"
+            placeholder="Enter task title"
+            class="w-full"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="description" class="form-label">Description</label>
+          <Textarea
+            id="description"
+            v-model="formData.description"
+            placeholder="Enter task description"
+            class="w-full"
+            rows="4"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="status" class="form-label">Status *</label>
+            <Dropdown
+              id="status"
+              v-model="formData.status"
+              :options="statusOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select status"
+              class="w-full"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="due_date" class="form-label">Due Date</label>
+            <Calendar
+              id="due_date"
+              v-model="formData.due_date"
+              :showIcon="true"
+              placeholder="Select due date"
+              dateFormat="yy-mm-dd"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button
+          label="Cancel"
+          icon="pi pi-times"
+          @click="showEditDialog = false"
+          severity="secondary"
+          text
+        />
+        <Button
+          label="Update"
+          icon="pi pi-check"
+          @click="saveTask"
+          severity="success"
+        />
+      </template>
+    </Dialog>
+
+    <!-- AI Breakdown Dialog -->
+    <AIBreakdownDialog
+      v-model:visible="showAIDialog"
+      :task-id="task?.id"
+      :task-title="task?.title"
+      @success="handleAIBreakdownSuccess"
+    />
+
+    <!-- AI Enhance Description Dialog -->
+    <AIEnhanceDescriptionDialog
+      v-model:visible="showEnhanceDialog"
+      :task-title="task?.title"
+      :task-description="task?.description"
+      @enhanced="handleEnhanceSuccess"
+    />
+
+    <!-- AI Analyze Priority Dialog -->
+    <AIAnalyzePriorityDialog
+      v-model:visible="showPriorityDialog"
+      :task-title="task?.title"
+      :task-description="task?.description"
+      :task-due-date="task?.due_date"
+      @analyzed="handleAnalyzeSuccess"
+    />
+
     <!-- Toast for feedback -->
     <Toast position="bottom-right" />
   </div>
@@ -146,6 +267,14 @@ import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import Toast from 'primevue/toast'
 import ProgressSpinner from 'primevue/progressspinner'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import Textarea from 'primevue/textarea'
+import Dropdown from 'primevue/dropdown'
+import Calendar from 'primevue/calendar'
+import AIBreakdownDialog from '@/components/AIBreakdownDialog.vue'
+import AIEnhanceDescriptionDialog from '@/components/AIEnhanceDescriptionDialog.vue'
+import AIAnalyzePriorityDialog from '@/components/AIAnalyzePriorityDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -157,6 +286,16 @@ const loading = ref(false)
 const updating = ref(false)
 const updatingStatus = ref(null)
 const error = ref(null)
+const showAIDialog = ref(false)
+const showEnhanceDialog = ref(false)
+const showPriorityDialog = ref(false)
+const showEditDialog = ref(false)
+const formData = ref({
+  title: '',
+  description: '',
+  status: 'pending',
+  due_date: null
+})
 
 const statusOptions = [
   { label: 'Pending', value: 'pending' },
@@ -226,10 +365,65 @@ const updateStatus = async (newStatus) => {
 }
 
 const editTask = () => {
-  router.push({
-    name: 'tasks',
-    query: { edit: route.params.id }
-  })
+  formData.value = {
+    title: task.value.title,
+    description: task.value.description,
+    status: task.value.status,
+    due_date: task.value.due_date ? new Date(task.value.due_date) : null
+  }
+  showEditDialog.value = true
+}
+
+const resetForm = () => {
+  formData.value = {
+    title: '',
+    description: '',
+    status: 'pending',
+    due_date: null
+  }
+}
+
+const saveTask = async () => {
+  if (!formData.value.title) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Validation Error',
+      detail: 'Title is required',
+      life: 3000
+    })
+    return
+  }
+
+  try {
+    const payload = {
+      ...formData.value,
+      due_date: formData.value.due_date
+        ? formData.value.due_date.toISOString()
+        : null
+    }
+
+    await taskStore.updateTask(route.params.id, payload)
+    
+    // Refresh task data
+    await fetchTask()
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Task updated successfully',
+      life: 3000
+    })
+
+    showEditDialog.value = false
+    resetForm()
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: taskStore.error || 'Failed to update task',
+      life: 3000
+    })
+  }
 }
 
 const deleteTask = () => {
@@ -253,11 +447,38 @@ const deleteTask = () => {
   }
 }
 
+const handleAIBreakdownSuccess = (breakdown) => {
+  toast.add({
+    severity: 'success',
+    summary: 'AI Breakdown Generated',
+    detail: `Generated ${breakdown.subtasks.length} actionable subtasks`,
+    life: 4000
+  })
+}
+
+const handleEnhanceSuccess = (result) => {
+  toast.add({
+    severity: 'success',
+    summary: 'Description Enhanced',
+    detail: 'Your task description has been improved',
+    life: 3000
+  })
+}
+
+const handleAnalyzeSuccess = (result) => {
+  toast.add({
+    severity: 'success',
+    summary: 'Priority Analyzed',
+    detail: `Priority: ${result.priority.toUpperCase()}`,
+    life: 3000
+  })
+}
+
 const goBack = () => {
   router.back()
 }
 
-onMounted(async () => {
+const fetchTask = async () => {
   loading.value = true
   error.value = null
 
@@ -268,6 +489,10 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+onMounted(async () => {
+  await fetchTask()
 })
 </script>
 
@@ -429,6 +654,91 @@ onMounted(async () => {
   margin-top: 0.5rem;
 }
 
+.w-full {
+  width: 100%;
+}
+
+/* Dialog Form Styles */
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  color: var(--text-color);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+:deep(.p-dialog) {
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+:deep(.p-dialog .p-dialog-header) {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-600) 100%);
+  border: none;
+  padding: 1.5rem;
+}
+
+:deep(.p-dialog .p-dialog-header .p-dialog-title) {
+  color: white;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+:deep(.p-dialog .p-dialog-header .p-dialog-header-close) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+:deep(.p-dialog .p-dialog-header .p-dialog-header-close:hover) {
+  color: white;
+}
+
+:deep(.p-dialog .p-dialog-content) {
+  background: var(--surface-card);
+  padding: 2rem;
+}
+
+:deep(.p-dialog .p-dialog-footer) {
+  background: var(--surface-section);
+  border-top: 1px solid var(--surface-border);
+  padding: 1.5rem;
+}
+
+:deep(.p-inputtext,
+.p-inputtextarea,
+.p-dropdown,
+.p-calendar) {
+  background: var(--surface-ground);
+  border: 1px solid var(--surface-border);
+  color: var(--text-color);
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  width: 100%;
+}
+
+:deep(.p-inputtext:focus,
+.p-inputtextarea:focus,
+.p-dropdown:focus,
+.p-calendar:focus) {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.2);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .detail-header {
@@ -466,6 +776,15 @@ onMounted(async () => {
 
   .actions-section {
     flex-direction: column;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  :deep(.p-dialog) {
+    width: 90vw !important;
   }
 
   :deep(.p-button) {
